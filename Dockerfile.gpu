@@ -62,6 +62,13 @@ RUN set -eux; \
 		venv/bin/pip install --upgrade pip; \
 		venv/bin/pip install -r requirements.txt;
 
+# Download the model
+RUN mkdir /models
+RUN wget -nc -P /models -e dotbytes=1M \
+	https://object.pouta.csc.fi/OPUS-MT-models/de-en/opus-2019-12-04.zip \
+	&& unzip -d /models/opus-2019-12-04.zip -d /models/de-en/ \
+	&& rm /models/opus-2019-12-04.zip
+
 # The second stage is based on the smaller CUDA Runtime image
 FROM nvidia/cuda:11.3.0-runtime-ubuntu20.04
 
@@ -72,6 +79,9 @@ COPY --from=builder /usr/lib/x86_64-linux-gnu/ /usr/lib/x86_64-linux-gnu/
 COPY --from=builder /usr/local/cuda/lib64/ /usr/local/cuda/lib64/
 COPY --from=builder /marian/build/marian-server /usr/local/bin
 COPY --from=builder /marian/build/venv/ /usr/src/app/venv/
+
+# Copy model
+COPY --from=builder /models /usr/src/app/models
 
 # Link shared libraries
 RUN ldconfig
